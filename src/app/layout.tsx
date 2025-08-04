@@ -1,5 +1,3 @@
-'use-client'
-
 import { getCssText } from '@/styles'
 import { globalStyles } from '@/styles/global'
 import type { Metadata } from 'next'

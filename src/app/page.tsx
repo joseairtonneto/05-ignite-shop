@@ -1,50 +1,48 @@
-'use client'
+import Stripe from 'stripe'
+import { stripe } from '@/lib/stripe'
 
-import Image from 'next/image'
-import { HomeContainer, Product } from './styles-page'
+import { HomeContainer } from './styles-page'
+import { Slider } from './components/Slider/Slider'
 
-import { useKeenSlider } from 'keen-slider/react'
+export interface Product {
+  id: string
+  name: string
+  imageUrl: string
+  description: string | null
+  url: string | null
+  price: string
+}
 
-import camiseta1 from '@/assets/camisetas/1.png'
-import camiseta2 from '@/assets/camisetas/2.png'
-import camiseta3 from '@/assets/camisetas/3.png'
-
-import 'keen-slider/keen-slider.min.css'
-
-export default function Home() {
-  const [sliderRef] = useKeenSlider({
-    slides: {
-      perView: 2,
-      spacing: 48,
-    },
-  })
+export default async function Home() {
+  const products = await getProducts()
 
   return (
-    <HomeContainer ref={sliderRef} className='keen-slider'>
-      <Product className='keen-slider__slide'>
-        <Image src={camiseta1} alt='' width={520} height={480} />
-
-        <footer>
-          <strong>Camiseta Nike</strong>
-          <span>R$ 120,00</span>
-        </footer>
-      </Product>
-      <Product className='keen-slider__slide'>
-        <Image src={camiseta2} alt='' width={520} height={480} />
-
-        <footer>
-          <strong>Camiseta Adidas</strong>
-          <span>R$ 80,00</span>
-        </footer>
-      </Product>
-      <Product className='keen-slider__slide'>
-        <Image src={camiseta3} alt='' width={520} height={480} />
-
-        <footer>
-          <strong>Camiseta Adidas</strong>
-          <span>R$ 80,00</span>
-        </footer>
-      </Product>
+    <HomeContainer>
+      <Slider products={products} />
     </HomeContainer>
   )
+}
+
+const getProducts = async () => {
+  const response = await stripe.products.list({
+    expand: ['data.default_price'],
+  })
+
+  const products: Product[] = response.data.map(product => {
+    const price = product.default_price as Stripe.Price
+
+    return {
+      id: product.id,
+      name: product.name,
+      price: new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(price.unit_amount! / 100),
+      description: product.description,
+      imageUrl: product.images[0],
+      url: product.url,
+    }
+  })
+
+  return products
 }
